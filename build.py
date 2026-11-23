@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Build a newspaper-front-page style daily world news image (1024x1024, deterministic)."""
 import math, os
-from PIL import Image, ImageDraw, ImageFont, ImageChops
+from PIL import Image, ImageDraw, ImageFont
 
 S = 1024
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "entry.png")
@@ -19,9 +19,6 @@ GREY = (92, 89, 82)
 RULE = (40, 38, 34)
 RED = (168, 40, 32)
 DARK = (34, 45, 56)
-
-# subtler lines get drawn on a 3x supersampled layer then reduced -> clean thin rules
-SS = 3
 
 img = Image.new("RGB", (S, S), PAPER)
 d = ImageDraw.Draw(img)
@@ -46,63 +43,57 @@ def put(x, y, txt, f, fill=INK, anchor="la", track=0):
     if track == 0:
         d.text((x, y), txt, font=f, fill=fill, anchor=anchor)
         return
-    # letter-spaced text
     cx = x
     for ch in txt:
         d.text((cx, y), ch, font=f, fill=fill, anchor="l" + anchor[1:])
         cx += d.textlength(ch, font=f) + track
 
 
-M = 50  # outer margin
+M = 60  # outer margin (breathing room around the whole page)
 
 # ---------------- Masthead ----------------
-# top hairline bar with tagline
-put(M, 30, "THE WORLD DAILY", font(F_NARROW_B, 20), fill=GREY, track=1.2)
+put(M, 34, "THE WORLD DAILY", font(F_NARROW_B, 20), fill=GREY, track=1.2)
 tag = "GLOBAL EDITION  ·  NO. 1,127  ·  SUNDAY, 22 NOVEMBER 2026"
-ft = font(F_SANS, 19)
-d.text((S - M, 30), tag, font=ft, fill=GREY, anchor="ra")
+d.text((S - M, 34), tag, font=font(F_SANS, 19), fill=GREY, anchor="ra")
 
-d.line([(M, 64), (S - M, 64)], fill=RULE, width=3)
-put(M, 70, "WORLD NEWS  ·  ONE DAY", font(F_NARROW_B, 30), fill=RED, track=1.0)
+d.line([(M, 66), (S - M, 66)], fill=RULE, width=3)
+put(M, 74, "WORLD NEWS  ·  ONE DAY", font(F_NARROW_B, 30), fill=RED, track=1.0)
 
-# ---------------- Block 1: big date + lead ----------------
+# ---------------- Block 1: big date + standfirst ----------------
 Y1 = 116
-# date block (left): huge day number
-fday = font(F_SANS_CB, 150)
+fday = font(F_SANS_CB, 130)
 d.text((M - 6, Y1 - 26), "22", font=fday, fill=INK)
-fnov = font(F_NARROW_B, 62)
-d.text((M + 2, Y1 + 122), "NOVEMBER", font=fnov, fill=INK)
-fyr = font(F_NARROW_B, 82)
-d.text((M + 2, Y1 + 180), "2026", font=fyr, fill=RED)
-put(M + 6, Y1 + 240, "SUNDAY", font(F_NARROW_B, 32), fill=GREY, track=3.0)
-d.line([(M, Y1 + 290), (640, Y1 + 290)], fill=RULE, width=2)
-d.line([(660, Y1 - 6), (660, Y1 + 290)], fill=RULE, width=2)
+d.text((M + 2, Y1 + 104), "NOVEMBER", font=font(F_NARROW_B, 58), fill=INK)
+d.text((M + 2, Y1 + 158), "2026", font=font(F_NARROW_B, 72), fill=RED)
+put(M + 6, Y1 + 214, "SUNDAY", font(F_NARROW_B, 32), fill=GREY, track=3.0)
+d.line([(M, Y1 + 262), (640, Y1 + 262)], fill=RULE, width=2)
+d.line([(660, Y1 - 6), (660, Y1 + 262)], fill=RULE, width=2)
 put(682, Y1 - 6, "THE DAY IN ONE LINE", font(F_NARROW_B, 22), fill=RED, track=0.8)
+# trimmed to three sentences so it stays comfortable at 300 px
 one = ["A record-long climate summit ends",
-       "with no deal, while Iran strikes",
-       "Bahrain and a Russian ship is hit",
-       "in the Baltic; Vietnam counts",
-       "41 dead in floods."]
-yy = Y1 + 34
+       "with no deal. Iran strikes Bahrain;",
+       "Vietnam floods kill 41."]
+yy = Y1 + 44
 for ln in one:
-    f = font(F_SANS, 24)
+    f = font(F_SANS, 26)
     while d.textlength(ln, font=f) > (S - M - 682):
         f = font(F_SANS, f.size - 1)
     d.text((682, yy), ln, font=f, fill=INK)
-    yy += 34
+    yy += 46
 
-d.line([(M, Y1 + 308), (S - M, Y1 + 308)], fill=RULE, width=7)
+d.line([(M, Y1 + 280), (S - M, Y1 + 280)], fill=RULE, width=7)
 
-# ---------------- Block 2: top story (left, ~2/3) + map (right) ----------------
-Y2 = Y1 + 316
-COLW_L = 560
-COLX_R = 622  # vertical rule at map panel boundary
+# ---------------- Block 2: top story (left) + numbered story list (right) ----------------
+Y2 = Y1 + 290
+COLW_L = 520
+COLX_R = 610  # column divider
 put(M, Y2, "TOP STORY  ·  CLIMATE", font(F_NARROW_B, 22), fill=RED, track=1.0)
 
-head = ["COP31 ENDS WITH NO DEAL"]
-fh = text_fit(F_SERIF_B, head[0], COLW_L, 50)
-d.text((M, Y2 + 26), head[0], font=fh, fill=INK)
-d.text((M, Y2 + 26 + fh.size + 2), "AS FOSSIL FUELS GO UNNAMED", font=font(F_SERIF_B, fh.size - 4), fill=INK)
+head1 = "COP31 ENDS WITH NO DEAL"
+fh = text_fit(F_SERIF_B, head1, COLW_L, 46)
+d.text((M, Y2 + 26), head1, font=fh, fill=INK)
+fh2 = text_fit(F_SERIF_B, "AS FOSSIL FUELS GO UNNAMED", COLW_L, fh.size - 4)
+d.text((M, Y2 + 26 + fh.size + 2), "AS FOSSIL FUELS GO UNNAMED", font=fh2, fill=INK)
 
 body = [
     ("Antalya talks run two days past schedule, 17 years", INK),
@@ -111,91 +102,49 @@ body = [
     ("Marshall Islands refuse to sign. Guterres:", INK),
     ("\u201Cdeeply disappointed.\u201D  No new draft from the chair.", RED),
 ]
-yb = Y2 + 26 + fh.size * 2 + 20
+yb = Y2 + 26 + fh.size + 2 + fh2.size + 24
 for i, (ln, col) in enumerate(body):
     f = font(F_SANS, 21)
     while d.textlength(ln, font=f) > COLW_L:
         f = font(F_SANS, f.size - 1)
     d.text((M, yb), ln, font=f, fill=col)
-    yb += f.size + 7
+    yb += f.size + 11
 
-# ---------------- Map panel ----------------
-MX0, MY0, MX1, MY1 = 622, Y2 - 10, S - M, Y2 + 196
-put(MX0 + 8, MY0 + 8, "WHERE IT HAPPENED", font(F_NARROW_B, 20), fill=RED, track=0.8)
-mx0, my0, mx1, my1 = MX0 + 8, MY0 + 34, MX1 - 4, MY1
+# ---------------- Right panel: five stories, numbered, vertical list ----------------
+d.line([(COLX_R - 16, Y2 - 4), (COLX_R - 16, yb - 8)], fill=(150, 144, 131), width=2)
+put(COLX_R, Y2, "THE FIVE STORIES", font(F_NARROW_B, 22), fill=RED, track=0.8)
+d.line([(COLX_R, Y2 + 32), (S - M, Y2 + 32)], fill=RULE, width=2)
 
-# simplified invented-free schematic: graticule + abstract continent blobs (no exact geo claims)
-g = Image.new("RGB", (mx1 - mx0, my1 - my0), (234, 229, 216))
-gd = ImageDraw.Draw(g)
-W, H = g.size
-for i in range(1, 8):
-    x = W * i / 8
-    gd.line([(x, 0), (x, H)], fill=(222, 216, 202), width=1)
-for i in range(1, 6):
-    y = H * i / 6
-    gd.line([(0, y), (W, y)], fill=(222, 216, 202), width=1)
-LAND = (198, 190, 172)
-blobs = [
-    # west coast Americas
-    [(0.02, 0.02), (0.20, 0.02), (0.24, 0.14), (0.16, 0.30), (0.20, 0.44), (0.14, 0.58),
-     (0.18, 0.74), (0.12, 0.94), (0.04, 0.92), (0.06, 0.66), (0.02, 0.46), (0.0, 0.24)],
-    # north atlantic edge island
-    [(0.30, 0.03), (0.38, 0.06), (0.36, 0.14), (0.29, 0.11)],
-    # europe/africa (abstract)
-    [(0.44, 0.05), (0.58, 0.05), (0.60, 0.16), (0.52, 0.22), (0.56, 0.34), (0.50, 0.52),
-     (0.46, 0.66), (0.40, 0.60), (0.42, 0.42), (0.38, 0.26), (0.40, 0.14)],
-    # asia
-    [(0.58, 0.04), (0.80, 0.06), (0.90, 0.16), (0.84, 0.30), (0.72, 0.36), (0.62, 0.30), (0.58, 0.16)],
-    # south-east asia
-    [(0.78, 0.34), (0.88, 0.40), (0.86, 0.54), (0.78, 0.50), (0.74, 0.40)],
-    # africa south
-    [(0.46, 0.60), (0.56, 0.60), (0.54, 0.86), (0.48, 0.84)],
+stories = [
+    ("1", "Antalya, T\u00FCrkiye", "COP31 closes with no deal."),
+    ("2", "Bahrain / Gulf", "Iranian missiles, drones hit industrial site."),
+    ("3", "Vietnam", "Central floods kill 41."),
+    ("4", "Gulf of Finland", "Drone hits Russian ship; 2nd in a week."),
+    ("5", "Shenzhen, China", "Xi, Putin, Trump sign joint statement."),
 ]
-for b in blobs:
-    gd.polygon([(x * W, y * H) for x, y in b], fill=LAND, outline=(176, 167, 148))
-img.paste(g, (mx0, my0))
-d.rectangle([mx0, my0, mx1, my1], outline=RULE, width=2)
+f_num = font(F_SANS_CB, 24)
+f_place = font(F_SANS_B, 20)
+f_line = font(F_SANS, 19)
+PY = Y2 + 42
+PW = S - M - COLX_R
+for k, (n, place, line) in enumerate(stories):
+    fpl = text_fit(F_SANS_B, place.upper(), PW - 46, 20)
+    d.text((COLX_R + 2, PY), n, font=f_num, fill=RED)
+    d.text((COLX_R + 44, PY + 1), place.upper(), font=fpl, fill=INK)
+    fl = text_fit(F_SANS, line, PW - 44, 19)
+    d.text((COLX_R + 46, PY + fpl.size + 7), line, font=fl, fill=(56, 54, 49))
+    bh = fpl.size + 7 + fl.size
+    PY += bh + 15
+    if k < len(stories) - 1:
+        d.line([(COLX_R + 44, PY - 7), (S - M, PY - 7)], fill=(206, 200, 186), width=1)
 
-marks = [
-    (0.53, 0.20, "1"),  # Europe / Turkey
-    (0.62, 0.34, "2"),  # Gulf
-    (0.80, 0.46, "3"),  # SE Asia
-    (0.36, 0.14, "4"),  # Baltic (north)
-    (0.84, 0.14, "5"),  # Shenzhen-ish NE
-]
-lab_w = 20
-for (ux, uy, n) in marks:
-    cx = mx0 + ux * (mx1 - mx0)
-    cy = my0 + uy * (my1 - my0)
-    r = 15
-    d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=RED)
-    fn = font(F_SANS_B, 19)
-    d.text((cx, cy - 1), n, font=fn, fill=PAPER, anchor="mm")
-
-ky = MY1 + 4
-keys = [
-    ("1", "Antalya, T\u00FCrkiye"),
-    ("2", "Bahrain / Gulf"),
-    ("3", "Vietnam floods"),
-    ("4", "Gulf of Finland"),
-    ("5", "Shenzhen summit"),
-]
-fkey = font(F_SANS, 16)
-for i, (n, name) in enumerate(keys):
-    col = i % 2
-    row = i // 2
-    x = MX0 + 2 + col * 196
-    y = ky - 2 + row * 21
-    d.text((x, y), n + ".", font=font(F_SANS_B, 16), fill=RED)
-    d.text((x + 20, y), name, font=fkey, fill=INK)
-
-# ---------------- Block 3: four story tiles ----------------
-Y3 = 748
+# ---------------- Block 3: five story tiles ----------------
+Y3 = 756
 d.line([(M, Y3 - 22), (S - M, Y3 - 22)], fill=RULE, width=3)
 put(M, Y3 - 16, "ALSO ON 22 NOVEMBER", font(F_NARROW_B, 20), fill=RED, track=1.0)
 
 # --- small clean pictograms, drawn at 4x then downsampled ---
-IC = 84
+IC = 58
 
 
 def icon_canvas():
@@ -209,16 +158,12 @@ def icon_down(im):
 def ic_missile():
     im = icon_canvas(); x = ImageDraw.Draw(im)
     s = IC * 4
-    # missile body diagonal
     x.line([(s*0.12, s*0.88), (s*0.78, s*0.22)], fill=DARK + (255,), width=int(s*0.10))
     x.polygon([(s*0.78, s*0.22), (s*0.92, s*0.10), (s*0.90, s*0.28), (s*0.84, s*0.30)], fill=DARK + (255,))
-    # fins
     x.line([(s*0.22, s*0.66), (s*0.12, s*0.66)], fill=DARK + (255,), width=int(s*0.07))
     x.line([(s*0.30, s*0.74), (s*0.30, s*0.86)], fill=DARK + (255,), width=int(s*0.07))
-    # smoke puffs
     for (cx, cy, r) in [(0.10, 0.94, 0.09), (0.20, 0.97, 0.08), (0.04, 0.80, 0.07)]:
         x.ellipse([s*(cx-r), s*(cy-r), s*(cx+r), s*(cy+r)], fill=GREY + (255,))
-    # impact burst (top right)
     for a in range(0, 360, 45):
         rad = math.radians(a)
         x.line([(s*0.88, s*0.18), (s*0.88 + s*0.11*math.cos(rad), s*0.18 + s*0.11*math.sin(rad))],
@@ -229,17 +174,13 @@ def ic_missile():
 def ic_ship():
     im = icon_canvas(); x = ImageDraw.Draw(im)
     s = IC * 4
-    # waterline waves
     pts = [(0, 0.80), (0.25, 0.73), (0.5, 0.80), (0.75, 0.73), (1.0, 0.80)]
     for k, off in enumerate([0, 0.07]):
         x.line([(s*px, s*(py + off)) for px, py in pts], fill=(70, 96, 122, 255), width=int(s*0.03), joint="curve")
-    # hull
     x.polygon([(s*0.16, s*0.52), (s*0.86, s*0.52), (s*0.78, s*0.72), (s*0.24, s*0.72)], fill=DARK + (255,))
-    # bridge / containers
     x.rectangle([s*0.30, s*0.36, s*0.46, s*0.52], fill=DARK + (255,))
     for i in range(3):
         x.rectangle([s*(0.52 + i*0.10), s*0.40, s*(0.60 + i*0.10), s*0.52], outline=DARK + (255,), width=int(s*0.02))
-    # drone + beam hitting deck
     x.rectangle([s*0.62, s*0.10, s*0.74, s*0.14], fill=RED + (255,))
     for dx in (0.62, 0.66, 0.70, 0.74):
         x.line([(s*dx, s*0.14), (s*(dx - 0.03), s*0.19)], fill=RED + (255,), width=int(s*0.02))
@@ -254,17 +195,33 @@ def ic_flood():
     for k, y in enumerate([0.52, 0.64, 0.76, 0.88]):
         pts = [(0, y), (0.25, y - 0.05), (0.5, y), (0.75, y - 0.05), (1.0, y)]
         x.line([(s*px, s*py) for px, py in pts], fill=DARK + (255,), width=int(s*0.035), joint="curve")
-    # house half sunk
     x.rectangle([s*0.30, s*0.20, s*0.64, s*0.52], fill=(230, 222, 205, 255), outline=DARK + (255,), width=int(s*0.025))
     x.polygon([(s*0.24, s*0.20), (s*0.47, s*0.04), (s*0.70, s*0.20)], fill=RED + (255,))
     x.rectangle([s*0.42, s*0.34, s*0.52, s*0.46], fill=DARK + (255,))
     return icon_down(im)
 
 
+def ic_quake():
+    """Cracked ground + seismic zig-zag."""
+    im = icon_canvas(); x = ImageDraw.Draw(im)
+    s = IC * 4
+    # seismic trace
+    pts = [(0.04, 0.30), (0.24, 0.30), (0.32, 0.10), (0.42, 0.52), (0.50, 0.06),
+           (0.58, 0.44), (0.66, 0.30), (0.96, 0.30)]
+    x.line([(s*px, s*py) for px, py in pts], fill=RED + (255,), width=int(s*0.045), joint="curve")
+    # ground line with a shifted fault block
+    x.line([(s*0.02, s*0.72), (s*0.44, s*0.72)], fill=DARK + (255,), width=int(s*0.05))
+    x.line([(s*0.56, s*0.84), (s*0.98, s*0.84)], fill=DARK + (255,), width=int(s*0.05))
+    # crack between blocks
+    x.line([(s*0.46, s*0.60), (s*0.52, s*0.94)], fill=DARK + (255,), width=int(s*0.035))
+    x.polygon([(s*0.30, s*0.72), (s*0.44, s*0.72), (s*0.40, s*0.94), (s*0.26, s*0.94)], fill=(198, 190, 172, 255))
+    x.line([(s*0.30, s*0.72), (s*0.44, s*0.72)], fill=DARK + (255,), width=int(s*0.05))
+    return icon_down(im)
+
+
 def ic_handshake():
     im = icon_canvas(); x = ImageDraw.Draw(im)
     s = IC * 4
-    # three abstract figures in a triangle
     heads = [(0.50, 0.16), (0.22, 0.62), (0.78, 0.62)]
     for hx, hy in heads:
         x.ellipse([s*(hx-0.075), s*(hy-0.075), s*(hx+0.075), s*(hy+0.075)], fill=DARK + (255,))
@@ -276,71 +233,56 @@ def ic_handshake():
     return icon_down(im)
 
 
-def ic_broken_table():
-    im = icon_canvas(); x = ImageDraw.Draw(im)
-    s = IC * 4
-    # empty chairs (four) around a cracked table
-    x.rectangle([s*0.18, s*0.52, s*0.82, s*0.60], fill=DARK + (255,))
-    x.polygon([(s*0.52, s*0.52), (s*0.58, s*0.60), (s*0.46, s*0.60)], fill=PAPER)
-    x.line([(s*0.26, s*0.60), (s*0.26, s*0.80)], fill=DARK + (255,), width=int(s*0.04))
-    x.line([(s*0.74, s*0.60), (s*0.74, s*0.80)], fill=DARK + (255,), width=int(s*0.04))
-    for cx in (0.16, 0.38, 0.62, 0.84):
-        x.rectangle([s*(cx-0.07), s*0.80, s*(cx+0.07), s*0.86], fill=RED + (255,))
-    x.line([(s*0.30, s*0.52), (s*0.30, s*0.36)], fill=RED + (255,), width=int(s*0.035))
-    x.line([(s*0.70, s*0.52), (s*0.70, s*0.36)], fill=RED + (255,), width=int(s*0.035))
-    return icon_down(im)
-
-
-TILE_Y = Y3 + 12
-TILE_H = 214
-TILE_W = (S - 2*M - 3*16) // 4
+TILE_Y = Y3 + 8
+TILE_H = 154
+NT = 5
+GAP = 16
+TILE_W = (S - 2 * M - (NT - 1) * GAP) // NT
 tiles = [
-    # (region label, headline lines, sub lines, icon, accent-icon?)
-    ("MIDDLE EAST", ["IRAN STRIKES", "BAHRAIN ON 22 NOV"], ["IRGC missiles & drones;", "fire at industrial site.", "Saudi Arabia condemns."], ic_missile()),
-    ("EUROPE / BALTIC", ["DRONE HITS", "RUSSIAN SHIP"], ["Attack in Gulf of Finland,", "2nd in a week. Russian", "missile debris in Poland."], ic_ship()),
-    ("ASIA / DISASTERS", ["VIETNAM FLOODS:", "41 DEAD"], ["Days of rain in central", "Vietnam. Quake kills 6,", "felt in Kolkata."], ic_flood()),
-    ("GREAT POWER", ["3-WAY SUMMIT", "SHENZHEN, 19 NOV"], ["Xi, Putin, Trump: first", "joint statement on nuclear", "war & UN reform."], ic_handshake()),
+    ("MIDDLE EAST", ["IRAN STRIKES", "BAHRAIN"], ["IRGC missiles & drones;", "fire at industrial site."], ic_missile()),
+    ("EUROPE", ["DRONE HITS", "RUSSIAN SHIP"], ["Gulf of Finland, 2nd", "attack in a week."], ic_ship()),
+    ("VIETNAM", ["FLOODS:", "41 DEAD"], ["Days of rain in", "central Vietnam."], ic_flood()),
+    ("BANGLADESH", ["QUAKE:", "6 DEAD"], ["Tremor felt in", "Kolkata, India."], ic_quake()),
+    ("GREAT POWER", ["3-WAY SUMMIT", "SHENZHEN"], ["Xi, Putin, Trump:", "joint statement."], ic_handshake()),
 ]
 
 TX = M
 for (reg, hl, sub, ic) in tiles:
-    # icon (left) + headline (right)
-    img.paste(ic, (TX + 4, TILE_Y + 2), ic)
-    hx = TX + IC + 14
-    hw = TILE_W - IC - 14
-    yy = TILE_Y + 4
-    fr = font(F_NARROW_B, 18)
-    d.text((hx, yy), reg, font=fr, fill=RED)
-    yy += 24
+    # region label, icon, headline stack, then one short fact line
+    d.text((TX + 2, TILE_Y - 2), reg, font=font(F_NARROW_B, 18), fill=RED)
+    img.paste(ic, (TX + 2, TILE_Y + 18), ic)
+    yy = TILE_Y + 18 + IC + 6
     for ln in hl:
-        f = text_fit(F_SANS_CB, ln, hw, 34)
-        d.text((hx, yy), ln, font=f, fill=INK)
-        yy += f.size + 1
-    # sub lines under, full tile width
-    yy = TILE_Y + IC + 14
+        f = text_fit(F_SANS_CB, ln, TILE_W - 6, 27)
+        d.text((TX + 2, yy), ln, font=f, fill=INK)
+        yy += f.size + 3
+    yy += 5
     for ln in sub:
-        f = text_fit(F_SANS, ln, TILE_W - 8, 19)
+        f = text_fit(F_SANS, ln, TILE_W - 8, 17)
         d.text((TX + 2, yy), ln, font=f, fill=(56, 54, 49))
-        yy += f.size + 5
-    TX += TILE_W + 16
+        yy += f.size + 2
+    TX += TILE_W + GAP
 
-# tile separators
-for i in range(1, 4):
-    xx = M + i * (TILE_W + 16) - 8
-    d.line([(xx, TILE_Y), (xx, TILE_Y + TILE_H)], fill=(150, 144, 131), width=1)
+for i in range(1, NT):
+    xx = M + i * (TILE_W + GAP) - GAP // 2 - 1
+    d.line([(xx, TILE_Y + 2), (xx, TILE_Y + TILE_H)], fill=(150, 144, 131), width=1)
 
-# ---------------- Kicker strip above footer ----------------
-KY = 976
+# ---------------- Source strip + footer (well clear of the bottom edge) ----------------
+KY = 960
 d.line([(M, KY), (S - M, KY)], fill=RULE, width=3)
-put(M, KY + 3, "SOURCE", font(F_NARROW_B, 16), fill=RED, track=0.8)
-d.text((M + 78, KY + 3), "CNN · Politico · The Independent · Reuters · AP  |  As reported on 22 November 2026",
+put(M, KY + 4, "SOURCE", font(F_NARROW_B, 16), fill=RED, track=0.8)
+d.text((M + 78, KY + 4), "CNN · Politico · The Independent · Reuters · AP  |  As reported on 22 November 2026",
        font=font(F_SANS, 15), fill=GREY)
 
-# ---------------- Footer ----------------
-FY = 1000
-d.line([(M, FY - 4), (S - M, FY - 4)], fill=RULE, width=3)
-put(M, FY + 2, "SUNDAY 22 NOVEMBER 2026", font(F_SANS_B, 21), fill=INK, track=0.5)
-d.text((S - M, FY + 3), "A single day, five regions  ·  The World Daily", font=font(F_SANS, 19), fill=GREY, anchor="ra")
+FY = 986
+d.line([(M, FY), (S - M, FY)], fill=RULE, width=3)
+put(M, FY + 7, "SUNDAY 22 NOVEMBER 2026", font(F_SANS_B, 21), fill=INK, track=0.5)
+d.text((S - M, FY + 8), "A single day, five regions  ·  The World Daily", font=font(F_SANS, 19), fill=GREY, anchor="ra")
 
 img.save(OUT, format="PNG", optimize=True)
 print("wrote", OUT, os.path.getsize(OUT), img.size)
+
+# ---------------- 300px preview thumbnail ----------------
+PREV = os.path.join(os.path.dirname(os.path.abspath(__file__)), "preview-300.png")
+img.resize((300, 300), Image.LANCZOS).save(PREV, format="PNG", optimize=True)
+print("wrote", PREV, os.path.getsize(PREV))
